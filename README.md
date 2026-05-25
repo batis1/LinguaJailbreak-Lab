@@ -33,4 +33,5 @@ Create these Google Colab Secrets before running:
 ## Files
 
 - `notebooks/cc_bos_gpt4o_reproduction_colab.ipynb`: runnable Colab notebook for smoke and full GPT-4o reproduction runs.
+- `examples/ccbos_smoke.csv`: safe 5-row CSV for checking that the Colab/API pipeline runs.
 - `scripts/create_ccbos_reproduction_notebook.py`: generator used to create the notebook.
