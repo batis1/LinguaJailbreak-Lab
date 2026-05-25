@@ -34,9 +34,12 @@ cells = [
         """
         # CC-BOS GPT-4o reproduction notebook
 
-        This notebook is for the first reproduction target only: the public CC-BOS implementation in its native Classical Chinese setting, with GPT-4o as the target and judge model and DeepSeek-Chat as the prompt-generation and translation model.
+        This notebook supports two paths:
 
-        It does not switch language, optimizer, strategy dimensions, thresholds, or target model family by default. The notebook only adds Colab setup, API-key loading, required folder/data checks, smoke/full run modes, result aggregation, and metadata logging. A Qwen prompt/translation provider is available for diagnostic runs when DeepSeek is unavailable; those runs are labeled as non-strict reproduction variants.
+        - `qwen_only`: Qwen-Plus is used for prompt generation, target response, translation, and judging. Use this first as a practical pipeline/debug baseline.
+        - `strict_gpt4o_reproduction`: the public CC-BOS implementation's native GPT-4o/DeepSeek setting.
+
+        The notebook does not switch language, optimizer, strategy dimensions, thresholds, or iteration budget. It adds Colab setup, API-key loading, required folder/data checks, smoke/full run modes, result aggregation, and metadata logging. Qwen-only runs are labeled as non-strict reproduction variants.
 
         Run only on datasets and model accounts you are authorized to evaluate. This repository does not include AdvBench rows; upload your own `goal,intention` CSV.
         """
@@ -45,12 +48,12 @@ cells = [
         """
         ## Reproduction settings
 
-        Keep these values unchanged for the first GPT-4o reproduction pass unless you are intentionally running a diagnostic variant.
+        Start with `qwen_only` to debug the complete CC-BOS loop through a single working API provider. Use `strict_gpt4o_reproduction` later when OpenAI quota and DeepSeek balance are available.
         """
     ),
     code_cell(
         """
-        #@title Official GPT-4o reproduction settings
+        #@title Experiment settings
         RUN_MODE = "smoke"  #@param ["smoke", "full"]
         SMOKE_N = 5  #@param {type:"integer"}
 
@@ -66,19 +69,36 @@ cells = [
         CCBOS_REPO = "https://github.com/xunhuang123/CC-BOS.git"
         CCBOS_COMMIT = ""  # Optional: set a commit hash to pin the public implementation.
 
-        PROMPT_TRANSLATION_PROVIDER = "deepseek"  #@param ["deepseek", "qwen"]
-        QWEN_MODEL = "qwen-plus"  # Used only when PROMPT_TRANSLATION_PROVIDER == "qwen".
+        EXPERIMENT_MODE = "qwen_only"  #@param ["qwen_only", "strict_gpt4o_reproduction"]
+        QWEN_MODEL = "qwen-plus"
 
-        TARGET_MODEL = "gpt-4o"
-        if PROMPT_TRANSLATION_PROVIDER == "qwen":
+        if EXPERIMENT_MODE == "qwen_only":
+            TARGET_PROVIDER = "qwen"
+            TARGET_MODEL = QWEN_MODEL
+            PROMPT_TRANSLATION_PROVIDER = "qwen"
             PROMPT_GENERATION_MODEL = QWEN_MODEL
             TRANSLATION_MODEL = QWEN_MODEL
+            JUDGE_PROVIDER = "qwen"
+            JUDGE_MODEL = QWEN_MODEL
             PROVIDER_STRICT_REPRODUCTION = False
-        else:
+        elif EXPERIMENT_MODE == "strict_gpt4o_reproduction":
+            TARGET_PROVIDER = "openai"
+            TARGET_MODEL = "gpt-4o"
+            PROMPT_TRANSLATION_PROVIDER = "deepseek"
             PROMPT_GENERATION_MODEL = "deepseek-chat"
             TRANSLATION_MODEL = "deepseek-chat"
+            JUDGE_PROVIDER = "openai"
+            JUDGE_MODEL = "gpt-4o"
             PROVIDER_STRICT_REPRODUCTION = True
-        JUDGE_MODEL = "gpt-4o"
+        else:
+            raise ValueError("EXPERIMENT_MODE must be 'qwen_only' or 'strict_gpt4o_reproduction'.")
+        """
+    ),
+    markdown_cell(
+        """
+        ## Mode Notes
+
+        `qwen_only` is the recommended first run right now because it removes OpenAI quota and proxy issues. It is not a strict reproduction of the paper's GPT-4o row, and Qwen judging its own outputs can bias the score. Treat it as a pipeline/baseline result first.
         """
     ),
     markdown_cell(
@@ -147,12 +167,11 @@ cells = [
 
         Create these Colab Secrets before running:
 
-        - `OPENAI_API_KEY`
-        - `OPENAI_BASE_URL` (optional; leave unset for the default OpenAI endpoint)
-        - For strict reproduction with DeepSeek: `DEEPSEEK_API_KEY`
-        - `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
-        - For a Qwen diagnostic run: `QWEN_API_KEY`
+        - For `qwen_only`: `QWEN_API_KEY`
         - `QWEN_BASE_URL` (optional; defaults to `https://dashscope.aliyuncs.com/compatible-mode/v1`)
+        - For `strict_gpt4o_reproduction`: `OPENAI_API_KEY` and `DEEPSEEK_API_KEY`
+        - `OPENAI_BASE_URL` (optional; leave unset for the default OpenAI endpoint)
+        - `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
 
         The notebook writes keys only to environment variables for the current Colab runtime and never prints them.
         """
@@ -182,14 +201,22 @@ cells = [
             "QWEN_BASE_URL": get_secret("QWEN_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         }
 
-        if PROMPT_TRANSLATION_PROVIDER not in {"deepseek", "qwen"}:
-            raise ValueError("PROMPT_TRANSLATION_PROVIDER must be 'deepseek' or 'qwen'.")
+        provider_env = {
+            "openai": ("OPENAI_API_KEY", "OPENAI_BASE_URL"),
+            "deepseek": ("DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"),
+            "qwen": ("QWEN_API_KEY", "QWEN_BASE_URL"),
+        }
+        for provider_name in (TARGET_PROVIDER, PROMPT_TRANSLATION_PROVIDER, JUDGE_PROVIDER):
+            if provider_name not in provider_env:
+                raise ValueError(f"Unsupported provider: {provider_name}")
 
-        required_secret_names = ["OPENAI_API_KEY"]
-        if PROMPT_TRANSLATION_PROVIDER == "qwen":
-            required_secret_names.append("QWEN_API_KEY")
-        else:
-            required_secret_names.append("DEEPSEEK_API_KEY")
+        required_secret_names = sorted(
+            {
+                provider_env[TARGET_PROVIDER][0],
+                provider_env[PROMPT_TRANSLATION_PROVIDER][0],
+                provider_env[JUDGE_PROVIDER][0],
+            }
+        )
 
         missing = [name for name in required_secret_names if not secret_config[name]]
         if missing:
@@ -201,27 +228,33 @@ cells = [
         os.environ["PROMPT_TRANSLATION_PROVIDER"] = PROMPT_TRANSLATION_PROVIDER
         os.environ["PROMPT_GENERATION_MODEL"] = PROMPT_GENERATION_MODEL
         os.environ["TRANSLATION_MODEL"] = TRANSLATION_MODEL
+        os.environ["TARGET_MODEL"] = TARGET_MODEL
+        os.environ["JUDGE_MODEL"] = JUDGE_MODEL
 
-        if PROMPT_TRANSLATION_PROVIDER == "qwen":
-            os.environ["PROMPT_TRANSLATION_API_KEY_ENV"] = "QWEN_API_KEY"
-            os.environ["PROMPT_TRANSLATION_BASE_URL_ENV"] = "QWEN_BASE_URL"
-        else:
-            os.environ["PROMPT_TRANSLATION_API_KEY_ENV"] = "DEEPSEEK_API_KEY"
-            os.environ["PROMPT_TRANSLATION_BASE_URL_ENV"] = "DEEPSEEK_BASE_URL"
+        target_api_key_env, target_base_url_env = provider_env[TARGET_PROVIDER]
+        prompt_api_key_env, prompt_base_url_env = provider_env[PROMPT_TRANSLATION_PROVIDER]
+        judge_api_key_env, judge_base_url_env = provider_env[JUDGE_PROVIDER]
+        os.environ["TARGET_API_KEY_ENV"] = target_api_key_env
+        os.environ["TARGET_BASE_URL_ENV"] = target_base_url_env
+        os.environ["PROMPT_TRANSLATION_API_KEY_ENV"] = prompt_api_key_env
+        os.environ["PROMPT_TRANSLATION_BASE_URL_ENV"] = prompt_base_url_env
+        os.environ["JUDGE_API_KEY_ENV"] = judge_api_key_env
+        os.environ["JUDGE_BASE_URL_ENV"] = judge_base_url_env
 
-        print("OpenAI key loaded:", bool(os.environ["OPENAI_API_KEY"]))
-        print("OpenAI base URL:", os.environ.get("OPENAI_BASE_URL") or "default OpenAI endpoint")
+        print("Experiment mode:", EXPERIMENT_MODE)
+        print("Target provider/model:", TARGET_PROVIDER, TARGET_MODEL)
         print("Prompt/translation provider:", PROMPT_TRANSLATION_PROVIDER)
         print("Prompt-generation model:", PROMPT_GENERATION_MODEL)
         print("Translation model:", TRANSLATION_MODEL)
-        print("Strict DeepSeek reproduction path:", PROVIDER_STRICT_REPRODUCTION)
+        print("Judge provider/model:", JUDGE_PROVIDER, JUDGE_MODEL)
+        print("Strict GPT-4o/DeepSeek reproduction path:", PROVIDER_STRICT_REPRODUCTION)
         """
     ),
     markdown_cell(
         """
         ## Patch only Colab plumbing and logging
 
-        The public scripts have empty API-key/base-URL fields and assume `../result` already exists. This cell patches those plumbing issues and adds run logging for the best strategy vector. It does not change the optimizer, language, success threshold, or iteration budget. The prompt/translation model is DeepSeek-Chat by default; Qwen is explicitly labeled as a diagnostic provider variant.
+        The public scripts have empty API-key/base-URL fields and assume `../result` already exists. This cell patches those plumbing issues, routes target/prompt/translation/judge calls according to `EXPERIMENT_MODE`, and adds run logging for the best strategy vector. It does not change the optimizer, language, success threshold, or iteration budget.
         """
     ),
     code_cell(
@@ -287,7 +320,7 @@ cells = [
         gen_text = re.sub(
             r"openai_client = OpenAI\(\s*api_key=\"\".*?base_url=\"\".*?\)\s*"
             r"deepseek_client = OpenAI\(\s*api_key=\"\".*?base_url=\"\".*?\)",
-            'openai_client = make_client("OPENAI_API_KEY", "OPENAI_BASE_URL")\n\n'
+            'openai_client = make_client(os.environ.get("TARGET_API_KEY_ENV", "OPENAI_API_KEY"), os.environ.get("TARGET_BASE_URL_ENV", "OPENAI_BASE_URL"))\n\n'
             'deepseek_client = make_client(os.environ.get("PROMPT_TRANSLATION_API_KEY_ENV", "DEEPSEEK_API_KEY"), os.environ.get("PROMPT_TRANSLATION_BASE_URL_ENV", "DEEPSEEK_BASE_URL"))',
             gen_text,
             flags=re.S,
@@ -301,12 +334,16 @@ cells = [
                 "if _seed:\n"
                 "    random.seed(int(_seed))\n"
                 "    np.random.seed(int(_seed))\n\n"
+                "TARGET_MODEL = os.environ.get(\"TARGET_MODEL\", \"gpt-4o\")\n"
                 "PROMPT_GENERATION_MODEL = os.environ.get(\"PROMPT_GENERATION_MODEL\", \"deepseek-chat\")\n"
-                "TRANSLATION_MODEL = os.environ.get(\"TRANSLATION_MODEL\", \"deepseek-chat\")",
+                "TRANSLATION_MODEL = os.environ.get(\"TRANSLATION_MODEL\", \"deepseek-chat\")\n"
+                "JUDGE_MODEL = os.environ.get(\"JUDGE_MODEL\", \"gpt-4o\")",
             )
 
         gen_text = gen_text.replace('model="deepseek-chat",', 'model=PROMPT_GENERATION_MODEL,')
+        gen_text = gen_text.replace('model="gpt-4o",', 'model=TARGET_MODEL,')
         gen_text = gen_text.replace('model_name="deepseek-chat"', 'model_name=TRANSLATION_MODEL')
+        gen_text = gen_text.replace('judge_model_name="gpt-4o"', 'judge_model_name=JUDGE_MODEL')
 
         gen_text = gen_text.replace(
             'return best_query, best_score, counter["attempts"], response_text, best_consistency, best_raw',
@@ -334,7 +371,7 @@ cells = [
             )
         utils_text = utils_text.replace(
             '# Initialize the OpenAI client\nopenai_client = OpenAI(\n    api_key= "",\n    base_url=""\n)\n',
-            '# Initialize the OpenAI client\nopenai_client = make_client("OPENAI_API_KEY", "OPENAI_BASE_URL")\n',
+            '# Initialize the judge client\nopenai_client = make_client(os.environ.get("JUDGE_API_KEY_ENV", "OPENAI_API_KEY"), os.environ.get("JUDGE_BASE_URL_ENV", "OPENAI_BASE_URL"))\n',
         )
         utils_path.write_text(utils_text, encoding="utf-8")
 

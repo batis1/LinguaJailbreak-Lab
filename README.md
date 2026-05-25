@@ -2,11 +2,13 @@
 
 Swarm-guided discovery and analysis of cross-lingual jailbreak attacks in large language models.
 
-## Current Reproduction Artifact
+## Current Notebook
 
-[Open the CC-BOS GPT-4o reproduction notebook in Google Colab](https://colab.research.google.com/github/batis1/LinguaJailbreak-Lab/blob/main/notebooks/cc_bos_gpt4o_reproduction_colab.ipynb)
+[Open the CC-BOS Colab notebook](https://colab.research.google.com/github/batis1/LinguaJailbreak-Lab/blob/main/notebooks/cc_bos_gpt4o_reproduction_colab.ipynb)
 
-This first notebook is deliberately scoped to the public CC-BOS implementation's native setting:
+The default mode is now `qwen_only`, which uses Qwen-Plus for prompt generation, target response, translation, and judging. Use it first to verify the full CC-BOS pipeline with one working API provider.
+
+The notebook also keeps `strict_gpt4o_reproduction` for the public CC-BOS implementation's native setting:
 
 - Method: CC-BOS
 - Language: Classical Chinese
@@ -25,11 +27,11 @@ The notebook does not include the AdvBench CSV. Upload a `goal,intention` CSV in
 
 Create these Google Colab Secrets before running:
 
-- `OPENAI_API_KEY`
-- `DEEPSEEK_API_KEY` for strict CC-BOS reproduction, or `QWEN_API_KEY` for a Qwen diagnostic run
-- `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
+- `QWEN_API_KEY` for the default Qwen-only run
 - `QWEN_BASE_URL` (optional; defaults to `https://dashscope.aliyuncs.com/compatible-mode/v1`)
+- `OPENAI_API_KEY` and `DEEPSEEK_API_KEY` only for `strict_gpt4o_reproduction`
 - `OPENAI_BASE_URL` (optional; leave unset for the default OpenAI endpoint)
+- `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
 
 ## Files
 
