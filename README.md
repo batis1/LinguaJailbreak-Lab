@@ -26,8 +26,9 @@ The notebook does not include the AdvBench CSV. Upload a `goal,intention` CSV in
 Create these Google Colab Secrets before running:
 
 - `OPENAI_API_KEY`
-- `DEEPSEEK_API_KEY`
+- `DEEPSEEK_API_KEY` for strict CC-BOS reproduction, or `QWEN_API_KEY` for a Qwen diagnostic run
 - `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
+- `QWEN_BASE_URL` (optional; defaults to `https://dashscope.aliyuncs.com/compatible-mode/v1`)
 - `OPENAI_BASE_URL` (optional; leave unset for the default OpenAI endpoint)
 
 ## Files
