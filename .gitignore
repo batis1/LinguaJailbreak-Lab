@@ -1,0 +1,10 @@
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+
+# Local or Colab-generated experiment artifacts.
+/CC-BOS/
+/runs/
+/result/
+/data/
+*.zip
