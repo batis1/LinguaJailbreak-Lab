@@ -232,6 +232,18 @@ Expected first result:
 - Action-boundary guards should reduce unsafe tool calls but may over-block benign tasks.
 - Cross-channel results should show that web DOM attacks and mobile screenshot attacks fail differently.
 
+## Deep v2 Implementation Update
+
+The first Qwen-VL run showed that the MVP attack carriers were too basic: no-defense ASR stayed at 0 percent because the synthetic markers were obvious and the dataset had too little source diversity. The Deep v2 notebook therefore changes the project from a small synthetic MVP into a deeper benchmark scaffold:
+
+- Open-source ingestion mode tries Mind2Web, Android in the Wild, and RICO through Hugging Face `datasets`, records a load report, and pads with source-specific templates only when public sources fail or run out.
+- Source-inspired coverage includes VisualWebArena/WebArena-style web tasks, MobileSafetyBench-style mobile safety cases, AgentDojo/InjecAgent-style attack-defense structure, and MCPTox-style tool metadata poisoning.
+- The attack generator uses a categorical genome over carrier family, tone, visual placement, action schema, salience, repetition, and formatting density instead of a fixed payload list.
+- The optimizer is a discrete swarm loop with personal best, global best, social update, elite crossover, and mutation. It targets no-defense ASR >= 90 percent but reports whether that target is actually reached.
+- The result folder includes `source_breakdown_<run_id>.csv` and `target_report_<run_id>.json`, so a high ASR has to survive per-source inspection before it becomes a paper claim.
+
+The next decision should be made from the Deep v2 `qwen_swarm_smoke` run first, then a `qwen_deep` run if the optimizer finds non-trivial no-defense failures.
+
 ## Paper Angle
 
 Proposed abstract:
@@ -254,6 +266,13 @@ Implemented MVP scaffold:
 - `scripts/create_agenttrapbench_mvp_notebook.py`
 
 The notebook starts with a `dry_run` backend for harness validation, then supports `qwen_vl` with `Qwen/Qwen2.5-VL-7B-Instruct` on Colab A100. It generates synthetic web/mobile trap assets, evaluates mock tool-call behavior, compares simple defenses, and saves CSV summaries plus a metrics plot. When `SAVE_TO_GOOGLE_DRIVE = True`, results are saved to `MyDrive/AgentTrapBench/runs/<run_id>/` and `MyDrive/AgentTrapBench/latest/`.
+
+Implemented Deep v2 scaffold:
+
+- `notebooks/mobile_web_agenttrapbench_deep_v2_colab.ipynb`
+- `scripts/create_agenttrapbench_deep_v2_notebook.py`
+
+Deep v2 uses `DATASET_MODE = "open_mixed"` by default, writes results to `MyDrive/AgentTrapBenchDeepV2/`, and adds swarm optimization, open-dataset load reporting, source-family breakdowns, and a 90 percent ASR target report.
 
 1. Create a Colab notebook that loads Qwen2.5-VL-7B-Instruct with 4-bit or bf16 on A100.
 2. Generate a small synthetic dataset of HTML pages and mobile screenshots.
