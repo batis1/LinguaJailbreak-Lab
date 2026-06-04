@@ -33,8 +33,20 @@ Create these Google Colab Secrets before running:
 - `OPENAI_BASE_URL` (optional; leave unset for the default OpenAI endpoint)
 - `DEEPSEEK_BASE_URL` (optional; defaults to `https://api.deepseek.com`)
 
+## AgentTrapBench Colab Outputs
+
+The AgentTrapBench MVP notebook mounts Google Drive when `SAVE_TO_GOOGLE_DRIVE = True` and writes self-contained run artifacts to:
+
+- `MyDrive/AgentTrapBench/runs/<run_id>/`
+- `MyDrive/AgentTrapBench/latest/`
+
+Each run folder includes the synthetic dataset, rendered web/mobile assets, raw results CSV, summary CSV, plot, and metadata JSON.
+
 ## Files
 
 - `notebooks/cc_bos_gpt4o_reproduction_colab.ipynb`: runnable Colab notebook for smoke and full GPT-4o reproduction runs.
+- `notebooks/mobile_web_agenttrapbench_mvp_colab.ipynb`: Colab-ready MVP scaffold for the Mobile-Web AgentTrapBench AI-agent security benchmark.
 - `examples/ccbos_smoke.csv`: safe 5-row CSV for checking that the Colab/API pipeline runs.
 - `scripts/create_ccbos_reproduction_notebook.py`: generator used to create the notebook.
+- `scripts/create_agenttrapbench_mvp_notebook.py`: generator used to create the AgentTrapBench MVP notebook.
+- `research_briefs/agent_security_ideas_2026-06-04.md`: ranked research brief for mobile/web AI-agent attack ideas and the recommended first project.
