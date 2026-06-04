@@ -240,7 +240,9 @@ The first Qwen-VL run showed that the MVP attack carriers were too basic: no-def
 - Source-inspired coverage includes VisualWebArena/WebArena-style web tasks, MobileSafetyBench-style mobile safety cases, AgentDojo/InjecAgent-style attack-defense structure, and MCPTox-style tool metadata poisoning.
 - The attack generator uses a categorical genome over carrier family, tone, visual placement, action schema, salience, repetition, and formatting density instead of a fixed payload list.
 - The optimizer is a discrete swarm loop with personal best, global best, social update, elite crossover, and mutation. It targets no-defense ASR >= 90 percent but reports whether that target is actually reached.
-- The result folder includes `source_breakdown_<run_id>.csv` and `target_report_<run_id>.json`, so a high ASR has to survive per-source inspection before it becomes a paper claim.
+- The result folder includes `headline_summary_<run_id>.csv`, `bucket_summary_<run_id>.csv`, `source_breakdown_<run_id>.csv`, and `target_report_<run_id>.json`, so a high ASR has to survive open-web/open-mobile/tool-template inspection before it becomes a paper claim.
+- The paper-facing headline ASR excludes padded local template/tool rows. Those rows remain diagnostic only.
+- RICO and Android-in-the-Wild rows are label-cleaned as mobile UI summarization tasks with `expected_action = "summarize_page"` so benign success is interpretable.
 
 The next decision should be made from the Deep v2 `qwen_swarm_smoke` run first, then a `qwen_deep` run if the optimizer finds non-trivial no-defense failures.
 
@@ -272,7 +274,7 @@ Implemented Deep v2 scaffold:
 - `notebooks/mobile_web_agenttrapbench_deep_v2_colab.ipynb`
 - `scripts/create_agenttrapbench_deep_v2_notebook.py`
 
-Deep v2 uses `DATASET_MODE = "open_mixed"` by default, writes results to `MyDrive/AgentTrapBenchDeepV2/`, and adds swarm optimization, open-dataset load reporting, source-family breakdowns, and a 90 percent ASR target report.
+Deep v2 uses `DATASET_MODE = "open_mixed"` by default, writes results to `MyDrive/AgentTrapBenchDeepV2/`, and adds swarm optimization, open-dataset load reporting, source-family breakdowns, bucket-level ASR reporting, label-cleaned RICO/Android rows, and a 90 percent headline ASR target report. After a clean `qwen_swarm_smoke` run, use `RUN_PROFILE = "qwen_deep"` for the larger A100 run.
 
 1. Create a Colab notebook that loads Qwen2.5-VL-7B-Instruct with 4-bit or bf16 on A100.
 2. Generate a small synthetic dataset of HTML pages and mobile screenshots.

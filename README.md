@@ -46,14 +46,14 @@ Each run folder includes the synthetic dataset, rendered web/mobile assets, raw 
 
 [Open the Deep v2 Colab notebook](https://colab.research.google.com/github/batis1/LinguaJailbreak-Lab/blob/main/notebooks/mobile_web_agenttrapbench_deep_v2_colab.ipynb)
 
-Deep v2 expands the MVP into a benchmark scaffold with open-dataset ingestion, source-family coverage reports, and a discrete swarm optimizer for mock-only indirect prompt-injection attacks. Start with `RUN_PROFILE = "qwen_swarm_smoke"` to verify the Qwen-VL path, then use `RUN_PROFILE = "qwen_deep"` for a serious run.
+Deep v2 expands the MVP into a benchmark scaffold with open-dataset ingestion, source-family coverage reports, and a discrete swarm optimizer for mock-only indirect prompt-injection attacks. Start with `RUN_PROFILE = "qwen_swarm_smoke"` to verify the Qwen-VL path and label cleanup, then use `RUN_PROFILE = "qwen_deep"` for the larger A100 run.
 
 When `SAVE_TO_GOOGLE_DRIVE = True`, Deep v2 writes versioned artifacts to:
 
 - `MyDrive/AgentTrapBenchDeepV2/runs/<run_id>/`
 - `MyDrive/AgentTrapBenchDeepV2/latest/`
 
-Important artifacts include `open_dataset_load_report.csv`, `base_dataset.csv`, `swarm_history.csv`, `best_genome.json`, `optimized_attack_dataset.csv`, `results_<run_id>.csv`, `summary_<run_id>.csv`, `source_breakdown_<run_id>.csv`, and `target_report_<run_id>.json`.
+Important artifacts include `open_dataset_load_report.csv`, `base_dataset.csv`, `swarm_history.csv`, `best_genome.json`, `optimized_attack_dataset.csv`, `results_<run_id>.csv`, `summary_<run_id>.csv`, `headline_summary_<run_id>.csv`, `bucket_summary_<run_id>.csv`, `source_breakdown_<run_id>.csv`, and `target_report_<run_id>.json`. The paper-facing headline ASR comes from `headline_summary_<run_id>.csv`, which excludes padded template/tool diagnostic rows. Use `bucket_summary_<run_id>.csv` to report `open_web`, `open_mobile`, and `tool_or_template` separately.
 
 ## Files
 
